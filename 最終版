@@ -1,0 +1,124 @@
+import tkinter as tk                  # 匯入 tkinter 模組，用於建立圖形使用者介面 (GUI)
+from tkinter import messagebox         # 匯入彈出對話框模組，用於顯示勝負結果
+
+# ------------------
+# 遊戲設定
+# ------------------
+ANSWER = "WORLD"      # 設定正確答案（必須是 5 個字母）
+MAX_TRIES = 6         # 設定最大嘗試次數為 6 次
+current_try = 0       # 追蹤目前玩家猜到第幾次（從 0 開始）
+
+# ------------------
+# 主視窗設定
+# ------------------
+root = tk.Tk()                         # 建立主視窗物件
+root.title("Wordle - Tkinter Version") # 設定視窗標題
+root.geometry("420x500")               # 設定視窗寬度 420 像素，高度 500 像素
+root.resizable(False, False)           # 禁止使用者調整視窗大小（固定長寬）
+
+# ------------------
+# 標題與規則顯示
+# ------------------
+# Label 是一個標籤元件，用於顯示文字
+title = tk.Label(root, text="WORDLE", font=("Arial", 24, "bold"))
+title.pack(pady=10) # pack() 是佈局管理器，pady=10 代表上下留白 10 像素
+
+rule = tk.Label(
+    root,
+    text="Guess the Wordle in 6 tries\nAnswer: WORLD",
+    font=("Arial", 12)
+)
+rule.pack(pady=5)
+
+# ------------------
+# 遊戲顯示區（棋盤格 6x5）
+# ------------------
+board_frame = tk.Frame(root) # 建立一個框架 (Frame) 來包容所有的方格
+board_frame.pack(pady=20)
+
+labels = [] # 用於存儲所有的 Label 物件，方便後續更新文字與顏色
+
+# 使用巢狀迴圈建立 6 行 5 列的方格
+for row in range(MAX_TRIES):
+    row_labels = [] # 儲存這一行的 5 個方格
+    for col in range(5):
+        lbl = tk.Label(
+            board_frame,
+            text=" ",                # 初始文字為空
+            font=("Arial", 18, "bold"),
+            width=4,                 # 寬度
+            height=2,                # 高度
+            relief="solid",          # 邊框樣式（實線）
+            bg="white"               # 初始背景顏色
+        )
+        # 使用 grid 佈局管理器定位方格的位置
+        lbl.grid(row=row, column=col, padx=5, pady=5)
+        row_labels.append(lbl)
+    labels.append(row_labels) # 將這一行的標籤清單存入總清單中
+
+# ------------------
+# 檢查答案的邏輯函數
+# ------------------
+def check_word():
+    global current_try # 宣告使用外部的 current_try 變數
+
+    guess = entry.get().upper() # 獲取輸入框文字並轉為大寫
+
+    # 驗證輸入：必須是 5 個字母且全是英文
+    if len(guess) != 5 or not guess.isalpha():
+        messagebox.showwarning("錯誤", "請輸入 5 個英文字母") # 彈出警告視窗
+        return
+
+    entry.delete(0, tk.END) # 提交後清空輸入框
+
+    # 逐個字母比對並改變方格顏色
+    for i in range(5):
+        letter = guess[i]
+        lbl = labels[current_try][i] # 取得對應位置的 Label 物件
+        lbl.config(text=letter)      # 更新方格內的文字
+
+        if letter == ANSWER[i]:
+            # 位置正確：顯示綠色
+            lbl.config(bg="green", fg="white")
+        elif letter in ANSWER:
+            # 字母在單字中但位置不對：顯示黃色（金）
+            lbl.config(bg="gold", fg="black")
+        else:
+            # 字母不在單字中：顯示灰色
+            lbl.config(bg="light gray", fg="black")
+
+    # 勝利判定：如果猜測的單字與答案完全相同
+    if guess == ANSWER:
+        messagebox.showinfo("🎉 恭喜", "你猜對了！")
+        root.destroy() # 關閉遊戲視窗
+        return
+
+    current_try += 1 # 嘗試次數加 1
+
+    # 失敗判定：如果用完所有次數
+    if current_try >= MAX_TRIES:
+        messagebox.showinfo("😢 遊戲結束", f"正確答案是：{ANSWER}")
+        root.destroy() # 關閉遊戲視窗
+
+# ------------------
+# 輸入區與按鈕
+# ------------------
+# Entry 是單行輸入框元件
+entry = tk.Entry(root, font=("Arial", 16), justify="center")
+entry.pack(pady=10)
+entry.focus() # 自動將游標定位在輸入框，方便直接輸入
+
+# Button 是按鈕元件，按下後執行 command 指定的函數
+submit_btn = tk.Button(
+    root,
+    text="Submit",
+    font=("Arial", 14),
+    command=check_word # 點擊時呼叫 check_word 函數
+)
+submit_btn.pack(pady=10)
+
+# 綁定鍵盤 Enter 鍵，讓玩家按下 Enter 也能觸發 check_word
+root.bind("<Return>", lambda event: check_word())
+
+# 啟動 Tkinter 的事件循環（維持視窗顯示）
+root.mainloop()
