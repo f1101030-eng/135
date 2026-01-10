@@ -4,16 +4,16 @@ from tkinter import messagebox
 class WordleGame:
     def __init__(self, root):
         self.root = root
-        self.root.title("Python Wordle")
-        self.root.geometry("400x650") # 稍微調高高度
+        self.root.title("Python Wordle 遊戲 - 5次挑戰版")
+        self.root.geometry("400x650") # 調整視窗高度
 
-        # --- 遊戲設定 ---
-        self.target_word = "WORLD"
-        self.attempts = 0
-        self.max_attempts = 6
-        self.current_guess = []
+        # --- 遊戲核心設定 ---
+        self.target_word = "WORLD"     # 目標單字
+        self.attempts = 0              # 當前嘗試次數
+        self.max_attempts = 5          # 修改重點：改為 5 次機會
+        self.current_guess = []        # 存放目前輸入的字母
 
-        # --- 顏色設定 ---
+        # --- 顏色視覺設定 ---
         self.color_correct = "#6aaa64" # 綠色
         self.color_present = "#c9b458" # 黃色
         self.color_absent = "#787c7e"  # 灰色
@@ -21,50 +21,49 @@ class WordleGame:
 
         self.setup_ui()
         
-        # 綁定鍵盤事件
+        # 綁定實體鍵盤事件
         self.root.bind("<Key>", self.handle_keypress)
 
-        # --- 關鍵修改：啟動時先顯示規則視窗 ---
-        # 使用 after(100, ...) 確保主視窗載入後再跳出規則
+        # 啟動程式時自動跳出規則說明
         self.root.after(100, self.show_rules)
 
     def show_rules(self):
-        """ 建立初始浮動規則視窗 """
-        # 建立一個 Toplevel 視窗 (浮動視窗)
+        """ 建立浮動視窗顯示遊戲規則 """
         rule_win = tk.Toplevel(self.root)
         rule_win.title("遊戲規則")
-        rule_win.geometry("350x450")
-        
-        # 強制該視窗在最上層，且在關閉前無法操作主視窗 (Modal)
+        rule_win.geometry("380x500")
         rule_win.transient(self.root)
         rule_win.grab_set()
 
-        # 規則內容文字
+        # 修改規則文字中的次數描述
         rules_text = (
-            "【遊戲規則】\n\n"
-            "在 6 次嘗試內猜出 Wordle。\n"
-            "每次嘗試必須輸入一個五字母的有效單字。\n\n"
-            "輸入後，方塊顏色會改變，顯示接近程度：\n\n"
-            "● 綠色 (W)：字母在單字中且位置正確。\n"
-            "● 黃色 (I)：字母在單字中但位置不正確。\n"
-            "● 灰色 (U)：字母不在單字中任何位置。\n\n"
-            "答案提示：WORLD"
+            "【遊戲目標】\n"
+            "在 5 次嘗試內猜出一個隱藏的 5 字母單字。\n\n" # 更新為 5 次
+            "【玩法說明】\n"
+            "1. 輸入單字：\n"
+            "每次猜測都必須是一個有效的 5 字母單字。\n\n"
+            "2. 顏色回饋：\n"
+            "輸入後，方塊顏色會改變，提供線索：\n\n"
+            " ● 綠色：字母正確，且位於正確的位置。\n"
+            " ● 黃色：字母正確，但位於錯誤的位置。\n"
+            " ● 灰色：字母不在這個單字中。\n\n"
+            "【答案提示：WORLD】"
         )
-
-        # 建立顯示文字的 Label
-        tk.Label(rule_win, text=rules_text, font=("Arial", 11), justify="left", padx=20, pady=20).pack()
-
-        # 建立「開始遊戲」按鈕，點擊後關閉此視窗
-        start_btn = tk.Button(rule_win, text="開始遊戲", command=rule_win.destroy, 
-                              font=("Arial", 12, "bold"), bg="#6aaa64", fg="white", padx=20, pady=10)
-        start_btn.pack(pady=10)
+        
+        tk.Label(rule_win, text=rules_text, font=("Microsoft JhengHei", 11), 
+                 justify="left", padx=25, pady=25).pack()
+        
+        tk.Button(rule_win, text="我知道了，開始遊戲", command=rule_win.destroy, 
+                  bg="#6aaa64", fg="white", font=("Microsoft JhengHei", 10, "bold"), 
+                  padx=15, pady=5).pack(pady=10)
 
     def setup_ui(self):
-        """ 建立遊戲主格線介面 """
+        """ 建立主遊戲介面：5x5 網格 """
         self.cells = []
         self.grid_frame = tk.Frame(self.root)
         self.grid_frame.pack(pady=20)
 
+        # 建立 5 行 5 列的網格 (根據 max_attempts 自動調整)
         for r in range(self.max_attempts):
             row_cells = []
             for c in range(5):
@@ -76,26 +75,33 @@ class WordleGame:
                 row_cells.append(cell)
             self.cells.append(row_cells)
 
+        # 建立下方的「查看遊戲規則」按鈕
+        self.rule_btn = tk.Button(
+            self.root, 
+            text="查看遊戲規則", 
+            command=self.show_rules,
+            font=("Microsoft JhengHei", 12),
+            bg="#f8f8f8",
+            relief="groove",
+            padx=20,
+            pady=10
+        )
+        self.rule_btn.pack(pady=20)
+
     def handle_keypress(self, event):
-        """ 處理玩家鍵盤輸入 """
+        """ 監聽鍵盤輸入 """
         key = event.char.upper()
-        
-        # 處理字母輸入 (只允許 A-Z)
         if key.isalpha() and len(key) == 1 and len(self.current_guess) < 5:
             self.current_guess.append(key)
             self.update_grid()
-
-        # 處理退格
         elif event.keysym == "BackSpace" and len(self.current_guess) > 0:
             self.current_guess.pop()
             self.update_grid()
-
-        # 處理送出答案
         elif event.keysym == "Return" and len(self.current_guess) == 5:
             self.submit_guess()
 
     def update_grid(self):
-        """ 同步顯示目前輸入的字母 """
+        """ 同步顯示輸入的字母 """
         row = self.cells[self.attempts]
         for i in range(5):
             if i < len(self.current_guess):
@@ -104,38 +110,37 @@ class WordleGame:
                 row[i].config(text="")
 
     def submit_guess(self):
-        """ 提交並比對單字 """
+        """ 比對單字並更新顏色 """
         guess_str = "".join(self.current_guess)
         result_colors = self.check_word(guess_str)
 
-        # 更新背景顏色
         for i in range(5):
             self.cells[self.attempts][i].config(bg=result_colors[i], fg="white")
 
         if guess_str == self.target_word:
-            messagebox.showinfo("恭喜", "恭喜你！猜對了！")
+            messagebox.showinfo("恭喜", "正確答案！太棒了！")
             self.root.destroy()
         elif self.attempts == self.max_attempts - 1:
-            messagebox.showinfo("遊戲結束", f"很遺憾，答案是: {self.target_word}")
+            messagebox.showinfo("遊戲結束", f"5 次機會已用完！答案是: {self.target_word}")
             self.root.destroy()
         else:
             self.attempts += 1
             self.current_guess = []
 
     def check_word(self, guess):
-        """ 顏色判斷邏輯 """
+        """ Wordle 顏色檢查演算邏輯 """
         result = [self.color_absent] * 5
         target_list = list(self.target_word)
         guess_list = list(guess)
 
-        # 優先判斷綠色
+        # 第一輪：檢查綠色
         for i in range(5):
             if guess_list[i] == target_list[i]:
                 result[i] = self.color_correct
                 target_list[i] = None
                 guess_list[i] = None
 
-        # 再判斷黃色
+        # 第二輪：檢查黃色
         for i in range(5):
             if guess_list[i] is not None and guess_list[i] in target_list:
                 result[i] = self.color_present
@@ -147,3 +152,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     game = WordleGame(root)
     root.mainloop()
+
